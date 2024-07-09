@@ -1,0 +1,7 @@
+pandas
+apache-airflow
+sqlalchemy
+python-dotenv
+pymongo
+apache-airflow-providers-mongo
+duckdb
