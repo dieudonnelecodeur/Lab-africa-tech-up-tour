@@ -1,0 +1,21 @@
+# Utiliser une image de base officielle de Python
+FROM python:3.9-slim
+
+# Définir le répertoire de travail
+WORKDIR /streamlit
+
+# Copier les fichiers de l'application dans le conteneur
+COPY requirements.txt requirements.txt
+COPY config.toml config.toml
+
+# Installer les dépendances
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Exposer le port Streamlit
+EXPOSE 8501
+
+# Définir la variable d'environnement pour le fichier de configuration Streamlit
+ENV STREAMLIT_CONFIG_FILE=/streamlit/config.toml
+
+# Commande pour lancer Streamlit
+CMD ["streamlit", "run", "dashboard.py"]
