@@ -149,23 +149,6 @@ with col1:
     bar_chart.update_traces(marker_color='#82f4b1')
     st.plotly_chart(bar_chart)
 
-# with col2:
-#     data = flight_distance_passengers
-#     fig = px.scatter(data, x='flight_id', y='num_passengers', size='distance_km', title='Nuage de Points')
-#     fig.update_layout(
-#         xaxis=dict(
-#             title="Vol",
-#             titlefont=dict(color='#82f4b1'),
-#             tickfont=dict(color='#82f4b1')
-#         ),
-#         yaxis=dict(
-#             title="Nombre de passagers",
-#             titlefont=dict(color='#82f4b1'),
-#             tickfont=dict(color='#82f4b1')
-#         )
-#     )
-#     st.plotly_chart(fig)
-
 with col2:
 
     # Récupérer les données des vols
