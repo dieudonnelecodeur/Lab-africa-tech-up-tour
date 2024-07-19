@@ -120,7 +120,6 @@ queries = {
                 DATE_TRUNC('day',(DATE_TRUNC('day', book_date) + (7 - EXTRACT(DOW FROM book_date)::INTEGER) * INTERVAL '1 day')) AS week_end,
                 SUM(total_amount) AS total_revenue
             FROM bookings
-            WHERE NOT EXISTS(SELECT * FROM tickets WHERE book_ref = bookings.book_ref)
             GROUP BY week_end
             ORDER BY week_end DESC
             LIMIT 2;
