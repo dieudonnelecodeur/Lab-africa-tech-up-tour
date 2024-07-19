@@ -168,11 +168,17 @@ def fetch_table_from_postgres(table_name):
     df.to_csv(file_path, index=False)
     return file_path
 
-def compute(view_name):
+def compute(stat):
+    ticket_flights = db.read_csv("dump/ticket_flights.csv")
+    boarding_passes = db.read_csv("dump/boarding_passes.csv")
+    bookings = db.read_csv("dump/bookings.csv")
+    airports_data = db.read_csv("dump/airports_data.csv")
+    aircrafts_data = db.read_csv("dump/aircrafts_data.csv")
+    tickets = db.read_csv("dump/tickets.csv")
     flights = db.read_csv("dump/flights.csv")
-    file_path = f"dump/{view_name}.json"
-    columns = [desc[0] for desc in db.sql(queries[view_name]).description]
-    rows = db.sql(queries[view_name]).fetchall()
+    file_path = f"dump/{stat}.json"
+    columns = [desc[0] for desc in db.sql(queries[stat]).description]
+    rows = db.sql(queries[stat]).fetchall()
     data = [dict(zip(columns, row)) for row in rows]
     with open(file_path, 'w') as f:
         json.dump(data, f, default=serialize) # Ajouter serialize après une erreur
@@ -204,7 +210,7 @@ with DAG(
             compute_task = PythonOperator(
                 task_id=f"compute_{kpi}",
                 python_callable=compute,
-                op_kwargs={'view_name': kpi}
+                op_kwargs={'stat': kpi}
             )
             compute_kpi_tasks.append(compute_task)
     
@@ -214,7 +220,7 @@ with DAG(
             compute_task = PythonOperator(
                 task_id=f"compute_{agg}",
                 python_callable=compute,
-                op_kwargs={'view_name': agg}
+                op_kwargs={'stat': agg}
             )
             compute_agg_tasks.append(compute_task)
     
