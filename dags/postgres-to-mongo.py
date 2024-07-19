@@ -12,6 +12,8 @@ import duckdb as db
 import json
 from decimal import Decimal # Ajouter après erreur
 
+from airflow.providers.mongo.hooks.mongo import MongoHook
+import os
 
 default_args = {
     'owner': 'airflow',
@@ -182,7 +184,24 @@ def compute(stat):
     data = [dict(zip(columns, row)) for row in rows]
     with open(file_path, 'w') as f:
         json.dump(data, f, default=serialize) # Ajouter serialize après une erreur
-    return file_path
+
+def load_to_mongo(stat, file_path):
+    with open(file_path, 'r') as f:
+        data = json.load(f)
+    mongo_hook = MongoHook(conn_id="mongo_flights")
+    client = mongo_hook.get_conn()
+    db = client["kpi_graph"]
+    collection = db[stat]
+    collection.delete_many({})
+    if data:
+        collection.insert_many(data)
+    client.close()
+
+def cleanup_files():
+    for file in os.listdir('dump'):
+        file_path = os.path.join('dump', file)
+        if os.path.exists(file_path):
+            os.remove(file_path)
 
 with DAG(
     'postgres_to_mongo',
@@ -224,5 +243,33 @@ with DAG(
             )
             compute_agg_tasks.append(compute_task)
     
+    with TaskGroup('load_kpis') as load_kpis_group:
+        load_kpis_tasks = []
+        for kpi in kpis:
+            load_task = PythonOperator(
+                task_id=f"load_{kpi}_to_mongo",
+                python_callable=load_to_mongo,
+                op_kwargs={'stat': kpi, 'file_path': f"dump/{kpi}.json"}
+            )
+            load_kpis_tasks.append(load_task)
+    
+    with TaskGroup('load_aggs') as load_aggs_group:
+        load_aggs_tasks = []
+        for agg in aggs:
+            load_task = PythonOperator(
+                task_id=f"load_{agg}_to_mongo",
+                python_callable=load_to_mongo,
+                op_kwargs={'stat': agg, 'file_path': f"dump/{agg}.json"}
+            )
+            load_aggs_tasks.append(load_task)
+    
+    cleanup_task = PythonOperator(
+        task_id='cleanup_files',
+        python_callable=cleanup_files
+    )
+    
     start_task >> extract_group >> [compute_kpi_group,
                                     compute_aggs_group]
+    
+    compute_kpi_group >> load_kpis_group >> cleanup_task
+    compute_aggs_group >> load_aggs_group >> cleanup_task
